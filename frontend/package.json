@@ -36,6 +36,5 @@
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17"
-  },
-  "proxy": "cvparser-production-bf51.up.railway.app"
+  }
 }
