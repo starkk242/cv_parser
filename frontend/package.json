@@ -37,5 +37,5 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17"
   },
-  "proxy": "${process.env.REACT_APP_API_URL}"
+  "proxy": "cvparser-production-bf51.up.railway.app"
 }
