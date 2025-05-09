@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles can be added below */
+body {
+  @apply bg-gray-50;
+}
+
+.container {
+  @apply px-4 mx-auto;
+}
+
