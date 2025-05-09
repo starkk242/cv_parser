@@ -61,7 +61,7 @@ function App() {
       
       formData.append('format', format);
       
-      const response = await fetch('/upload', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -75,7 +75,9 @@ function App() {
         // For Excel format, we get a file download
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
+        
         setDownloadUrl(url);
+        console.log(downloadUrl);
         
         // Automatically trigger download
         const a = document.createElement('a');
