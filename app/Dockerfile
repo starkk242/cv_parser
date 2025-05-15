@@ -1,6 +1,6 @@
 FROM python:3.9-slim
 
-WORKDIR /app
+WORKDIR /project/app
 
 # Install dependencies
 COPY requirements.txt .
@@ -15,5 +15,8 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p data/uploads data/parsed data/job_descriptions
 
+EXPOSE 8000
+
 # Run the application
+CMD ["cd", ".."]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
