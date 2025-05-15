@@ -18,4 +18,5 @@ RUN mkdir -p data/uploads data/parsed data/job_descriptions
 EXPOSE 8000
 
 # Run the application
+CMD ["cd", ".."]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
