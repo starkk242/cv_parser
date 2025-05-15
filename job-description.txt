@@ -1,0 +1,73 @@
+# Frontend Developer Job Description
+
+## Job Title: Senior Frontend Developer
+
+## Company: TechSolutions Inc.
+
+## Job Description:
+
+TechSolutions Inc. is seeking a talented and experienced Senior Frontend Developer to join our product engineering team. In this role, you will be responsible for building sophisticated user interfaces for our enterprise SaaS platform. You will work closely with designers, backend developers, and product managers to create intuitive and responsive web applications that deliver exceptional user experiences.
+
+## Required Skills:
+- React.js (3+ years of experience)
+- Modern JavaScript (ES6+) and TypeScript
+- HTML5, CSS3, and responsive web design
+- State management with Redux or Context API
+- REST API integration and asynchronous programming
+- Experience with modern frontend build tools (Webpack, Babel, etc.)
+- Git version control and collaborative development workflows
+- Unit and integration testing (Jest, React Testing Library)
+- Performance optimization techniques for web applications
+- Cross-browser compatibility and accessibility standards
+
+## Preferred Skills:
+- Experience with Next.js or other React frameworks
+- Knowledge of GraphQL and Apollo Client
+- Familiarity with UI libraries like Material-UI, Chakra UI, or Tailwind CSS
+- Experience with WebSockets for real-time applications
+- Frontend architecture design patterns
+- CI/CD pipelines and DevOps practices
+- Previous experience in SaaS or enterprise application development
+- Knowledge of data visualization libraries (D3.js, Chart.js)
+- Basic understanding of backend technologies (Node.js, Python)
+- Experience with Agile/Scrum development methodologies
+
+## Education Requirements:
+- Bachelor's degree in Computer Science, Software Engineering, or related field
+- Equivalent work experience may be considered in lieu of degree
+- Relevant certifications in web development or frontend frameworks
+
+## Experience Requirements:
+- 4+ years of professional software development experience
+- 3+ years of experience with React.js and modern JavaScript
+- Experience working in cross-functional product teams
+- Demonstrated history of delivering high-quality user interfaces
+- Experience mentoring junior developers
+- Prior experience in a fast-paced, iterative development environment
+
+## Job Responsibilities:
+- Develop responsive and interactive user interfaces using React.js
+- Collaborate with UX/UI designers to implement pixel-perfect designs
+- Work closely with backend engineers to integrate frontend with APIs
+- Write clean, maintainable, and well-documented code
+- Implement state management solutions for complex application needs
+- Conduct code reviews and provide constructive feedback
+- Create and maintain unit tests and integration tests
+- Optimize applications for maximum performance and scalability
+- Stay current with emerging trends and technologies in frontend development
+- Contribute to technical documentation and knowledge sharing
+
+## Benefits:
+- Competitive salary and equity options
+- Health, dental, and vision insurance
+- 401(k) matching program
+- Flexible work arrangements with remote options
+- Professional development budget
+- Paid time off and company holidays
+- Modern office environment with standing desks and latest equipment
+- Regular team-building events and activities
+
+## Location:
+San Francisco, CA (Hybrid role with 2 days in-office requirement)
+
+TechSolutions Inc. is an equal opportunity employer committed to diversity in the workplace. We do not discriminate on the basis of race, color, religion, sex, gender identity, sexual orientation, national origin, age, disability, or veteran status.

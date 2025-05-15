@@ -35,3 +35,47 @@ Thumbs.db
 
 # Railway generated (optional)
 railway/
+
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Environment variables
+.env
+
+# Uploaded and parsed files
+data/uploads/*
+data/parsed/*
+data/job_descriptions/*
+!data/uploads/.gitkeep
+!data/parsed/.gitkeep
+!data/job_descriptions/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
