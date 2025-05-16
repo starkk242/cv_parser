@@ -15,9 +15,9 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p data/uploads data/parsed data/job_descriptions
 
-EXPOSE 8000
+EXPOSE 8080
 
 WORKDIR /
 
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
