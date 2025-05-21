@@ -10,8 +10,11 @@ const SkillsMatchChart = ({ match, height = 200 }) => {
   const textColor = useColorModeValue('rgba(0, 0, 0, 0.8)', 'rgba(255, 255, 255, 0.8)');
   
   // Calculate percentages
-  const matchedSkillsCount = match.matched_skills.length;
-  const missingSkillsCount = match.missing_skills.length;
+  // const matchedSkillsCount = match.matched_skills.length;
+  // const missingSkillsCount = match.missing_skills.length;
+
+  const matchedSkillsCount = match.skills_score;
+  const missingSkillsCount = 100 - match.skills_score;
   const totalSkills = matchedSkillsCount + missingSkillsCount;
   
   if (totalSkills === 0) {
@@ -77,7 +80,8 @@ const SkillsMatchChart = ({ match, height = 200 }) => {
           label: (context) => {
             const value = context.raw;
             const percentage = ((value / totalSkills) * 100).toFixed(1);
-            return `${context.label}: ${value} (${percentage}%)`;
+            // return `${context.label}: ${value} (${percentage}%)`;
+            return `${context.label}`;
           }
         }
       }
