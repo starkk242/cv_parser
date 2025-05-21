@@ -56,7 +56,7 @@ async def upload_cvs(
             text = extract_text_from_file(str(file_path))
             
             # Parse the text
-            parsed = extract_information(text)
+            parsed = extract_information(text, settings)
             parsed["file_name"] = file.filename
             parsed_data.append(parsed)
             

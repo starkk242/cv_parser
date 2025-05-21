@@ -2,6 +2,8 @@ import re
 import spacy
 from typing import Dict
 from datetime import datetime
+from huggingface_hub import InferenceClient
+import json
 
 # Initialize spaCy model
 try:
@@ -13,47 +15,89 @@ except OSError:
     nlp = spacy.load("en_core_web_sm")
 
 
-def extract_information(text: str) -> Dict:
-    """Extract relevant information from resume text using spaCy."""
-    doc = nlp(text)
-    
-    # Extract email addresses
-    email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-    emails = re.findall(email_pattern, text)
-    
-    # Extract phone numbers - expanded pattern to catch more formats
-    phone_pattern = r"(?:\+91[\s-]?(?:\d{5}\s\d{5}|\d{10}|\d{4}-\d{6}))|(?:\+\d{1,3}[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{4})|(?:\b\d{3}[-\.]?\d{3}[-\.]?\d{4}\b)|(?:\b\d{10}\b)"
-    phones = re.findall(phone_pattern, text)
-    
-    # Extract name (assume first proper noun in document is the name)
-    name = next((ent.text for ent in doc.ents if ent.label_ == "PERSON"), None)
-    
-    # Extract education (look for education-related keywords)
-    education = []
-    edu_keywords = {"degree", "bachelor", "master", "phd", "diploma", "university", "college", "school", "certification"}
-    for sent in doc.sents:
-        if any(keyword in sent.text.lower() for keyword in edu_keywords):
-            education.append(sent.text.strip())
-    
-    # Extract skills (look for technical terms and proper nouns)
-    skills = []
-    for token in doc:
-        if token.pos_ in {"PROPN", "NOUN"} and len(token.text) > 2 and token.text.lower() not in {"the", "and", "for", "with"}:
-            skills.append(token.text)
-    
-    # Extract work experience
-    experience = []
-    exp_keywords = {"experience", "work", "employment", "job", "position", "role", "career", "professional"}
-    for sent in doc.sents:
-        if any(keyword in sent.text.lower() for keyword in exp_keywords):
-            experience.append({"description": sent.text.strip()})
-    
-    return {
-        "name": name,
-        "email": emails[0] if emails else None,
-        "phone": phones[0] if phones else None,
-        "education": list(set(education)),
-        "skills": list(set(skills)),
-        "experience": experience[:5],  # Limit to last 5 experiences
-        "parsed_date": datetime.now().isoformat()
-    }
+def extract_information(text: str, settings) -> Dict:
+    """Extract relevant information from resume text using AI and fallback to spaCy."""
+
+    try:
+        # Try AI-based extraction first
+
+        # Initialize Hugging Face client
+        client = InferenceClient(
+            provider="cerebras",
+            api_key=settings.HUGGING_FACE_TOKEN
+        )
+
+        prompt = f"""
+        Extract information from this resume text and respond in the following JSON format:
+        {{
+            "name": "full name",
+            "email": "email address",
+            "phone": "phone number",
+            "education": ["list of education details"],
+            "skills": ["list of skills"],
+            "experience": [
+                {{"description": "experience description"}}
+            ]
+        }}
+
+        Resume text:
+        {text}
+
+        Return only the JSON structure, no other text.
+        """
+
+        completion = client.chat.completions.create(
+            model="Qwen/Qwen3-32B",
+            messages=[{"role": "user", "content": prompt}]
+        )
+
+        # Parse AI response
+        content = completion.choices[0].message.content
+        while '<think>' in content and '</think>' in content:
+            start = content.find('<think>')
+            end = content.find('</think>') + len('</think>')
+            content = content[:start] + content[end:]
+        
+        result = json.loads(content)
+        result["parsed_date"] = datetime.now().isoformat()
+        return result
+
+    except Exception as e:
+        # Fallback to spaCy-based extraction
+        print(e)
+        doc = nlp(text)
+        
+        email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+`\.[a-zA-Z]{2,}"
+        emails = re.findall(email_pattern, text)
+        
+        phone_pattern = r"(?:\+91[\s-]?(?:\d{5}\s\d{5}|\d{10}|\d{4}-\d{6}))|(?:\+\d{1,3}[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{4})|(?:\b\d{3}[-\.]?\d{3}[-\.]?\d{4}\b)|(?:\b\d{10}\b)"
+        phones = re.findall(phone_pattern, text)
+        
+        name = next((ent.text for ent in doc.ents if ent.label_ == "PERSON"), None)
+        
+        education = []
+        edu_keywords = {"degree", "bachelor", "master", "phd", "diploma", "university", "college", "school", "certification"}
+        for sent in doc.sents:
+            if any(keyword in sent.text.lower() for keyword in edu_keywords):
+                education.append(sent.text.strip())
+        
+        skills = []
+        for token in doc:
+            if token.pos_ in {"PROPN", "NOUN"} and len(token.text) > 2 and token.text.lower() not in {"the", "and", "for", "with"}:
+                skills.append(token.text)
+        
+        experience = []
+        exp_keywords = {"experience", "work", "employment", "job", "position", "role", "career", "professional"}
+        for sent in doc.sents:
+            if any(keyword in sent.text.lower() for keyword in exp_keywords):
+                experience.append({"description": sent.text.strip()})
+        
+        return {
+            "name": name,
+            "email": emails[0] if emails else None,
+            "phone": phones[0] if phones else None,
+            "education": list(set(education)),
+            "skills": list(set(skills)),
+            "experience": experience[:5],
+            "parsed_date": datetime.now().isoformat()
+        }

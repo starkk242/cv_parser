@@ -73,11 +73,11 @@ async def match_resumes_to_job(
             text = extract_text_from_file(str(file_path))
             
             # Parse the resume
-            parsed_resume = extract_information(text)
+            parsed_resume = extract_information(text, settings)
             parsed_resume["file_name"] = file.filename
             
             # Calculate traditional match score
-            # match_score = calculate_match_score(parsed_resume, job)
+            match_score = calculate_match_score(parsed_resume, job)
             
             # Get AI inference on match
             prompt = f"""
@@ -127,10 +127,7 @@ async def match_resumes_to_job(
                 match_results.append(assessment)
             except json.JSONDecodeError as e:
                 logger.error(f"Invalid JSON response from AI: {completion.choices[0].message.content}")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Invalid response from AI service"
-                )
+                match_results.append(match_score)
             
             logger.info(f"Successfully matched resume {file.filename} with job {job_id}")
             
@@ -208,7 +205,7 @@ async def batch_match_resumes_to_jobs(
             text = extract_text_from_file(str(file_path))
             
             # Parse the resume
-            parsed_resume = extract_information(text)
+            parsed_resume = extract_information(text, settings)
             parsed_resume["file_name"] = file.filename
             parsed_resumes.append(parsed_resume)
             
