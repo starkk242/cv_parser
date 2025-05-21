@@ -6,6 +6,7 @@ from pathlib import Path
 import pandas as pd
 from datetime import datetime
 import shutil
+import json
 
 from app.config import get_settings
 from app.api.dependencies import validate_file
@@ -14,6 +15,7 @@ from app.services.text_extraction import extract_text_from_file
 from app.services.cv_parser import extract_information
 from app.services.matcher import calculate_match_score
 from app.services.storage import get_job_description, get_job_descriptions
+from huggingface_hub import InferenceClient
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ async def match_resumes_to_job(
     settings = Depends(get_settings)
 ):
     """
-    Match uploaded resumes against a job description.
+    Match uploaded resumes against a job description using traditional matching and AI inference.
     
     - **job_id**: ID of the job description to match against
     - **files**: List of CV/Resume files to match
@@ -40,6 +42,12 @@ async def match_resumes_to_job(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Job description with ID {job_id} not found"
         )
+    
+    # Initialize Hugging Face client
+    client = InferenceClient(
+        provider="cerebras",
+        api_key=settings.HUGGING_FACE_TOKEN
+    )
     
     # Process resumes
     if not files:
@@ -62,16 +70,67 @@ async def match_resumes_to_job(
                 shutil.copyfileobj(file.file, buffer)
             
             # Extract text based on file type
-                        # Extract text based on file type
             text = extract_text_from_file(str(file_path))
             
             # Parse the resume
             parsed_resume = extract_information(text)
             parsed_resume["file_name"] = file.filename
             
-            # Calculate match score
-            match_score = calculate_match_score(parsed_resume, job)
-            match_results.append(match_score)
+            # Calculate traditional match score
+            # match_score = calculate_match_score(parsed_resume, job)
+            
+            # Get AI inference on match
+            prompt = f"""
+                Given the following job description and resume, evaluate the match and respond in the following JSON format:
+
+                {{
+                        "resume_id": "<resume_file_id>",
+                        "resume_name": "<resume_owner_name>",
+                        "job_id": "<job_id>",
+                        "job_title": "<job_title>",
+                        "overall_score": <int>,
+                        "skills_score": <float>,
+                        "education_score": <float>,
+                        "experience_score": <float>,
+                        "keyword_match_score": <float>,
+                        "matched_skills": [<list of matched skills>],
+                        "matched_education": [<list of matched education qualifications>],
+                        "matched_experience_keywords": [<list of experience-related keywords or phrases>],
+                        "missing_skills": [<list of important skills in JD that are missing in resume>]
+                    }}
+
+                Here is the job description:
+                {job['description']}
+
+                Here is the resume:
+                {text}
+
+                The scores should be on a scale of 0 to 100. Extract skills, education, experience, and relevant keywords carefully. Return only the JSON structure, don't send any other data than the JSON.
+            """
+
+            completion = client.chat.completions.create(
+                model="Qwen/Qwen3-32B",
+                messages=[{"role": "user", "content": prompt}]
+            )
+            
+            try:
+                # Remove any content between <think> and </think> tags
+                content = completion.choices[0].message.content
+                while '<think>' in content and '</think>' in content:
+                    start = content.find('<think>')
+                    end = content.find('</think>') + len('</think>')
+                    content = content[:start] + content[end:]
+                
+                # Parse the cleaned content
+                assessment = json.loads(content)
+                logger.info(f"Successfully parsed AI assessment for {file.filename}")
+                match_results.append(assessment)
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON response from AI: {completion.choices[0].message.content}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Invalid response from AI service"
+                )
             
             logger.info(f"Successfully matched resume {file.filename} with job {job_id}")
             
@@ -86,7 +145,7 @@ async def match_resumes_to_job(
                 file_path.unlink()
     
     # Sort results by overall score (descending)
-    match_results.sort(key=lambda x: x["overall_score"], reverse=True)
+    match_results.sort(key=lambda x: int(x["overall_score"]), reverse=True)
     
     return match_results
 
