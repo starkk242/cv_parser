@@ -3,6 +3,7 @@ import spacy
 from typing import Dict
 from datetime import datetime
 from huggingface_hub import InferenceClient
+from openai import OpenAI
 import json
 
 # Initialize spaCy model
@@ -22,9 +23,14 @@ def extract_information(text: str, settings) -> Dict:
         # Try AI-based extraction first
 
         # Initialize Hugging Face client
-        client = InferenceClient(
-            provider="cerebras",
-            api_key=settings.HUGGING_FACE_TOKEN
+        # client = InferenceClient(
+        #     provider="cerebras",
+        #     api_key=settings.HUGGING_FACE_TOKEN
+        # )
+
+        client = OpenAI(
+            api_key=settings.OPEN_AI,
+            base_url="https://inference.baseten.co/v1"
         )
 
         prompt = f"""
@@ -46,19 +52,30 @@ def extract_information(text: str, settings) -> Dict:
         Return only the JSON structure, no other text.
         """
 
-        completion = client.chat.completions.create(
-            model="Qwen/Qwen3-32B",
-            messages=[{"role": "user", "content": prompt}]
-        )
+        # completion = client.chat.completions.create(
+        #     model="Qwen/Qwen3-32B",
+        #     messages=[{"role": "user", "content": prompt}]
+        # )
 
-        # Parse AI response
-        content = completion.choices[0].message.content
-        while '<think>' in content and '</think>' in content:
-            start = content.find('<think>')
-            end = content.find('</think>') + len('</think>')
-            content = content[:start] + content[end:]
+        # # Parse AI response
+        # json_str = completion.choices[0].message.content
+
+
+        response = client.chat.completions.create(
+            model="meta-llama/Llama-4-Scout-17B-16E-Instruct",
+            messages=[{"role": "user", "content": prompt}],
+        )
         
-        result = json.loads(content)
+        # Parse the response content
+        content = response.choices[0].message.content
+        json_str = content.strip('`json\n').strip()
+
+        while '<think>' in json_str and '</think>' in json_str:
+            start = json_str.find('<think>')
+            end = json_str.find('</think>') + len('</think>')
+            json_str = json_str[:start] + json_str[end:]
+        
+        result = json.loads(json_str)
         result["parsed_date"] = datetime.now().isoformat()
         return result
 

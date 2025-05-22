@@ -15,7 +15,8 @@ from app.services.text_extraction import extract_text_from_file
 from app.services.cv_parser import extract_information
 from app.services.matcher import calculate_match_score
 from app.services.storage import get_job_description, get_job_descriptions
-from huggingface_hub import InferenceClient
+# from huggingface_hub import InferenceClient
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +45,14 @@ async def match_resumes_to_job(
         )
     
     # Initialize Hugging Face client
-    client = InferenceClient(
-        provider="cerebras",
-        api_key=settings.HUGGING_FACE_TOKEN
+    # client = InferenceClient(
+    #     provider="cerebras",
+    #     api_key=settings.HUGGING_FACE_TOKEN
+    # )
+
+    client = OpenAI(
+       api_key=settings.OPEN_AI,
+        base_url="https://inference.baseten.co/v1"
     )
     
     # Process resumes
@@ -108,25 +114,37 @@ async def match_resumes_to_job(
                 The scores should be on a scale of 0 to 100. Extract skills, education, experience, and relevant keywords carefully. Return only the JSON structure, don't send any other data than the JSON.
             """
 
-            completion = client.chat.completions.create(
-                model="Qwen/Qwen3-32B",
-                messages=[{"role": "user", "content": prompt}]
+            response = client.chat.completions.create(
+                model="meta-llama/Llama-4-Scout-17B-16E-Instruct",
+                messages=[{"role": "user", "content": prompt}],
             )
+            
+            # Parse the response content
+            content = response.choices[0].message.content
+            json_str = content.strip('`json\n').strip()
+
+            # Use non-streaming response for now
+            # completion = client.chat.completions.create(
+            #     model="Qwen/Qwen3-32B", 
+            #     messages=[{"role": "user", "content": prompt}]
+            # )
+
+            # json_str = completion.choices[0].message.content
             
             try:
                 # Remove any content between <think> and </think> tags
-                content = completion.choices[0].message.content
-                while '<think>' in content and '</think>' in content:
-                    start = content.find('<think>')
-                    end = content.find('</think>') + len('</think>')
-                    content = content[:start] + content[end:]
                 
-                # Parse the cleaned content
-                assessment = json.loads(content)
+                while '<think>' in json_str and '</think>' in json_str:
+                    start = json_str.find('<think>')
+                    end = json_str.find('</think>') + len('</think>')
+                    json_str = json_str[:start] + json_str[end:]
+                
+                # Parse the cleaned json_str
+                assessment = json.loads(json_str)
                 logger.info(f"Successfully parsed AI assessment for {file.filename}")
                 match_results.append(assessment)
             except json.JSONDecodeError as e:
-                logger.error(f"Invalid JSON response from AI: {completion.choices[0].message.content}")
+                logger.error(f"Invalid JSON response from AI: {json_str}")
                 match_results.append(match_score)
             
             logger.info(f"Successfully matched resume {file.filename} with job {job_id}")

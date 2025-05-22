@@ -29,6 +29,7 @@ class Settings(BaseSettings):
 
     # API Keys
     HUGGING_FACE_TOKEN: str = Field(default=os.environ.get("hugging_face_token"), env="hugging_face_token")
+    OPEN_AI: str = Field(default=os.environ.get("open_ai"), env="open_ai")
 
     class Config:
         env_file = ".env"
