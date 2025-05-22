@@ -99,7 +99,7 @@ async def match_resumes_to_job(
                         "education_score": <float>,
                         "experience_score": <float>,
                         "keyword_match_score": <float>,
-                        "matched_skills": [<list of matched skills with JD>],
+                        "matched_skills": [<list of matched skills which are present in JD, nothing else should be present>],
                         "matched_education": [<list of matched education qualifications>],
                         "matched_experience_keywords": [<list of experience-related keywords or phrases that matches with JD>],
                         "missing_skills": [<list of important skills in JD that are missing in resume>]
