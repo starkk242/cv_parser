@@ -99,9 +99,9 @@ async def match_resumes_to_job(
                         "education_score": <float>,
                         "experience_score": <float>,
                         "keyword_match_score": <float>,
-                        "matched_skills": [<list of matched skills>],
+                        "matched_skills": [<list of matched skills with JD>],
                         "matched_education": [<list of matched education qualifications>],
-                        "matched_experience_keywords": [<list of experience-related keywords or phrases>],
+                        "matched_experience_keywords": [<list of experience-related keywords or phrases that matches with JD>],
                         "missing_skills": [<list of important skills in JD that are missing in resume>]
                     }}
 
@@ -111,7 +111,8 @@ async def match_resumes_to_job(
                 Here is the resume:
                 {text}
 
-                The scores should be on a scale of 0 to 100. Extract skills, education, experience, and relevant keywords carefully. Return only the JSON structure, don't send any other data than the JSON.
+                The scores should be on a scale of 0 to 100. Extract skills, education, experience, and relevant keywords carefully. 
+                Return only the JSON structure, don't send any other data than the JSON.
             """
 
             response = client.chat.completions.create(
