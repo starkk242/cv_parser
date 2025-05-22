@@ -77,6 +77,21 @@ def extract_information(text: str, settings) -> Dict:
         
         result = json.loads(json_str)
         result["parsed_date"] = datetime.now().isoformat()
+
+        # Check if either email or phone is empty and process accordingly
+        if not result["email"] or not result["phone"]:
+            doc = nlp(text)
+            
+            if not result["email"]:
+                email_pattern = r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+`\.[a-zA-Z]{2,}"
+                if emails := re.findall(email_pattern, text):
+                    result["email"] = emails[0]
+            
+            if not result["phone"]:
+                phone_pattern = r"(?:\+91[\s-]?(?:\d{5}\s\d{5}|\d{10}|\d{4}-\d{6}))|(?:\+\d{1,3}[-\s]?\d{3}[-\s]?\d{3}[-\s]?\d{4})|(?:\b\d{3}[-\.]?\d{3}[-\.]?\d{4}\b)|(?:\b\d{10}\b)"
+                if phones := re.findall(phone_pattern, text):
+                    result["phone"] = phones[0]
+
         return result
 
     except Exception as e:
