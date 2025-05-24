@@ -1,124 +1,89 @@
-import json
 import uuid
-from pathlib import Path
 from typing import Dict, List, Optional
-
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from app.config import Settings
+import json
 
 
-def get_job_description_path(settings: Settings) -> Path:
-    """Get path for storing job descriptions."""
-    # Ensure directory exists
-    Path(settings.JD_DIR).mkdir(parents=True, exist_ok=True)
-    return Path(settings.JD_DIR) / "job_descriptions.json"
+def get_db_connection(settings: Settings):
+    """Establish a connection to the database."""
+    return psycopg2.connect(
+        host=settings.DB_HOST,
+        port=settings.DB_PORT,
+        database=settings.DB_DATABASE,
+        user=settings.DB_USER,
+        password=settings.DB_PASSWORD
+    )
 
 
 def save_job_description(job_data: Dict, settings: Settings) -> str:
-    """Save job description to file."""
-    job_file = get_job_description_path(settings)
-    
-    # Create job ID if not provided
+    """Save job description to the database."""
     if "id" not in job_data:
         job_data["id"] = str(uuid.uuid4())
     
-    # Load existing jobs or create empty list
-    if job_file.exists():
-        with open(job_file, "r") as f:
-            try:
-                jobs = json.load(f)
-            except json.JSONDecodeError:
-                jobs = []
-    else:
-        jobs = []
+    create_table_query = """
+    CREATE TABLE IF NOT EXISTS job_descriptions (
+        id UUID PRIMARY KEY,
+        data JSONB NOT NULL
+    )
+    """
     
-    # Add new job
-    jobs.append(job_data)
+    insert_query = """
+    INSERT INTO job_descriptions (id, data)
+    VALUES (%s, %s)
+    """
     
-    # Save updated jobs list
-    with open(job_file, "w") as f:
-        json.dump(jobs, f, indent=2)
+    with get_db_connection(settings) as conn:
+        with conn.cursor() as cur:
+            # Ensure the table exists
+            cur.execute(create_table_query)
+            # Insert the job description
+            cur.execute(insert_query, (job_data["id"], json.dumps(job_data)))
+            conn.commit()
     
     return job_data["id"]
 
 
 def get_job_descriptions(settings: Settings) -> List[Dict]:
-    """Get all job descriptions."""
-    job_file = get_job_description_path(settings)
-    
-    if not job_file.exists():
-        return []
-    
-    with open(job_file, "r") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+    """Get all job descriptions from the database."""
+    query = "SELECT data FROM job_descriptions"
+    with get_db_connection(settings) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query)
+            rows = cur.fetchall()
+            return [row["data"] for row in rows]
 
 
 def get_job_description(job_id: str, settings: Settings) -> Optional[Dict]:
     """Get a specific job description by ID."""
-    jobs = get_job_descriptions(settings)
-    
-    for job in jobs:
-        if job.get("id") == job_id:
-            return job
-    
-    return None
+    query = "SELECT data FROM job_descriptions WHERE id = %s"
+    with get_db_connection(settings) as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, (job_id,))
+            row = cur.fetchone()
+            return row["data"] if row else None
 
 
 def update_job_description(job_id: str, updated_data: Dict, settings: Settings) -> bool:
     """Update an existing job description."""
-    job_file = get_job_description_path(settings)
-    
-    if not job_file.exists():
-        return False
-    
-    with open(job_file, "r") as f:
-        try:
-            jobs = json.load(f)
-        except json.JSONDecodeError:
-            return False
-    
-    # Find and update the job
-    for i, job in enumerate(jobs):
-        if job.get("id") == job_id:
-            # Update all fields except id
-            for key, value in updated_data.items():
-                if key != "id":
-                    job[key] = value
-            
-            # Save updated list
-            with open(job_file, "w") as f:
-                json.dump(jobs, f, indent=2)
-            
-            return True
-    
-    # Job not found
-    return False
+    query = """
+    UPDATE job_descriptions
+    SET data = data || %s
+    WHERE id = %s
+    """
+    with get_db_connection(settings) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (updated_data, job_id))
+            conn.commit()
+            return cur.rowcount > 0
 
 
 def delete_job_description(job_id: str, settings: Settings) -> bool:
     """Delete a job description."""
-    job_file = get_job_description_path(settings)
-    
-    if not job_file.exists():
-        return False
-    
-    with open(job_file, "r") as f:
-        try:
-            jobs = json.load(f)
-        except json.JSONDecodeError:
-            return False
-    
-    # Find and remove the job
-    initial_count = len(jobs)
-    jobs = [job for job in jobs if job.get("id") != job_id]
-    
-    if len(jobs) < initial_count:
-        # Save updated list
-        with open(job_file, "w") as f:
-            json.dump(jobs, f, indent=2)
-        return True
-    
-    # Job not found
-    return False
+    query = "DELETE FROM job_descriptions WHERE id = %s"
+    with get_db_connection(settings) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query, (job_id,))
+            conn.commit()
+            return cur.rowcount > 0

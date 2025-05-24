@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     HUGGING_FACE_TOKEN: str = Field(default=os.environ.get("hugging_face_token"), env="hugging_face_token")
     OPEN_AI: str = Field(default=os.environ.get("open_ai"), env="open_ai")
 
+    # Database settings
+    DB_HOST: str = Field(default=os.environ.get("db_host"), env="db_host")
+    DB_PORT: int = Field(default=os.environ.get("db_port"), env="db_port")
+    DB_DATABASE: str = Field(default=os.environ.get("db_database"), env="db_database")
+    DB_USER: str = Field(default=os.environ.get("db_user"), env="db_user")
+    DB_PASSWORD: str = Field(default=os.environ.get("db_password"), env="db_password")
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
