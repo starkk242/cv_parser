@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException, status, BackgroundTasks
 from fastapi.responses import FileResponse
 from typing import List, Optional
 from pathlib import Path
@@ -18,10 +18,20 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["CV Processing"])
 
 
+def cleanup_file(file_path: Path):
+    """Helper function to clean up temporary files"""
+    try:
+        if file_path.exists():
+            file_path.unlink()
+    except Exception as e:
+        logger.warning(f"Failed to cleanup file {file_path}: {str(e)}")
+
+
 @router.post("/upload", response_model=List[ParsedResume])
 async def upload_cvs(
     files: List[UploadFile] = File(...),
-    format: Optional[str] = "json",
+    format: Optional[str] = Form("json"),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     settings = Depends(get_settings)
 ):
     """
@@ -134,12 +144,14 @@ async def upload_cvs(
             excel_path = Path(settings.PARSED_DIR) / f"parsed_resumes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
             df.to_excel(excel_path, index=False)
             
+            # Schedule cleanup of the Excel file after response is sent
+            background_tasks.add_task(cleanup_file, excel_path)
+            
             # Return Excel file
             return FileResponse(
                 path=str(excel_path),
                 media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                filename=excel_path.name,
-                background=BackgroundTasks(lambda: excel_path.unlink(missing_ok=True))  # Clean up the file after sending
+                filename=excel_path.name
             )
         except Exception as e:
             logger.error(f"Error generating Excel file: {str(e)}")
@@ -149,4 +161,3 @@ async def upload_cvs(
             )
     
     return parsed_data
-
